@@ -1,51 +1,82 @@
-using Microsoft.AspNetCore.Authentication.Negotiate;
+using System.Reflection;
+using AvansAfvalAPI.Database;
+using AvansAfvalAPI.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
-    .AddNegotiate();
+var sqlConnectionString = builder.Configuration.GetConnectionString("RailwayConnection");
+var sqlConnectionStringFound = !string.IsNullOrWhiteSpace(sqlConnectionString);
 
-builder.Services.AddAuthorization(options =>
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
 {
-    // By default, all incoming requests will be authorized according to the default policy.
-    options.FallbackPolicy = options.DefaultPolicy;
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        
+        Title = "AvansAfvalAPI",
+        Version = "v1",
+    });
 });
+builder.Services.Configure<RouteOptions>(o => o.LowercaseUrls = true);
+
+
+builder.Services.AddAuthorization();
+
+
+builder.Services.AddIdentityApiEndpoints<IdentityUser>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+        options.Password.RequiredLength = 10;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireDigit = true;
+        options.Password.RequireNonAlphanumeric = true;
+        options.Password.RequireDigit = true;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<DatabaseContext>();
+// Register IHttpContextAccessor for accessing HTTP context in services (e.g., to get current user info).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<IAuthenticationService, AspNetIdentityAuthenticationService>();
+
+
+builder.Services.AddDbContextPool<DatabaseContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("RailwayConnection"))
+);
+
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Ziekenhuis API v1");
+        options.RoutePrefix = "swagger"; // Access at /swagger
+        options.CacheLifetime = TimeSpan.Zero; // Disable caching for development
+
+        if (!sqlConnectionStringFound)
+            options.HeadContent = "<h1 align=\"center\">❌ SqlConnectionString not found ❌</h1>";
+    });
+}
+else
+{
+    var buildTimeStamp = File.GetCreationTime(Assembly.GetExecutingAssembly().Location);
+    string currentHealthMessage = $"The API is up 🚀 | Connection string found: {(sqlConnectionStringFound ? "✅" : "❌")} | Build timestamp: {buildTimeStamp}";
+
+    app.MapGet("/", () => currentHealthMessage);
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+app.UseAuthentication();
+app.MapGroup("/account").MapIdentityApi<IdentityUser>().WithTags("Account");
 
-app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast");
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
