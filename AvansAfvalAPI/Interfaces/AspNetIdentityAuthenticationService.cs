@@ -12,9 +12,12 @@ public class AspNetIdentityAuthenticationService : IAuthenticationService
     }
 
     /// <inheritdoc />
-    public string GetCurrentAuthenticatedUserId()
+    public string? GetCurrentAuthenticatedUserId()
     {
-        // Returns the aspnet_User.Id of the authenticated user
-        return _httpContextAccessor.HttpContext!.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var user = _httpContextAccessor.HttpContext?.User;
+        if (user?.Identity?.IsAuthenticated != true)
+            return null;
+
+        return user.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 }
