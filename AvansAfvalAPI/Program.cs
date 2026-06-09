@@ -35,7 +35,6 @@ builder.Services.AddIdentityApiEndpoints<IdentityUser>(options =>
         options.Password.RequireUppercase = true;
         options.Password.RequireDigit = true;
         options.Password.RequireNonAlphanumeric = true;
-        options.Password.RequireDigit = true;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<DatabaseContext>();
@@ -45,7 +44,7 @@ builder.Services.AddTransient<IAuthenticationService, AspNetIdentityAuthenticati
 
 
 builder.Services.AddDbContextPool<DatabaseContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("RailwayConnection"))
+    options.UseNpgsql(builder.Configuration.GetConnectionString(sqlConnectionString))
 );
 
 
@@ -57,7 +56,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Ziekenhuis API v1");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "AvansAfvalAPI v1");
         options.RoutePrefix = "swagger"; // Access at /swagger
         options.CacheLifetime = TimeSpan.Zero; // Disable caching for development
 
@@ -76,6 +75,7 @@ else
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseAuthorization();
 app.MapGroup("/account").MapIdentityApi<IdentityUser>().WithTags("Account");
 
 
