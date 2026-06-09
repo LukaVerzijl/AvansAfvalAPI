@@ -9,6 +9,8 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : Identi
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+        modelBuilder.Entity<IdentityUser>()
+            .HasIndex(u => u.NormalizedEmail)
+            .IsUnique();
     }
 }
