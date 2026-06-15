@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AvansAfvalAPI.Database;
 using AvansAfvalAPI.Interfaces;
 using AvansAfvalAPI.models;
@@ -24,9 +25,21 @@ public class TrashController : ControllerBase
     }
 
     [HttpGet(Name = "GetAllTrash")]
-    public async Task<ActionResult<TrashModel>> GetAsync()
+    public async Task<ActionResult<IEnumerable<TrashModel>>> GetAsync([FromQuery] DateTime? time1, [FromQuery]  DateTime? time2)
     {
-        List<TrashModel> trash = await _context.Trash.ToListAsync();
+        var query = _context.Trash.AsQueryable();
+
+        if (time1.HasValue)
+        {
+            query = query.Where(t => t.CaptureDate >= time1.Value);
+        }
+
+        if (time2.HasValue)
+        {
+            query = query.Where(t => t.CaptureDate <= time2.Value);
+        }
+
+        var trash = await query.ToListAsync();
         return Ok(trash);
     }
 }
