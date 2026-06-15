@@ -7,6 +7,8 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
+
 var sqlConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
                           ?? builder.Configuration.GetConnectionString("RailwayConnection");
 var sqlConnectionStringFound = !string.IsNullOrWhiteSpace(sqlConnectionString);
