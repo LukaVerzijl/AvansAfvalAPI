@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvansAfvalAPI", "AvansAfvalAPI\AvansAfvalAPI.csproj", "{45F3AB52-0962-4509-85C6-D5AACA7CFF96}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageWebApp", "ImageWebApp\ImageWebApp.csproj", "{2CD6E543-1DF8-4D1A-B4CA-C01E8EF57520}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{45F3AB52-0962-4509-85C6-D5AACA7CFF96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{45F3AB52-0962-4509-85C6-D5AACA7CFF96}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{45F3AB52-0962-4509-85C6-D5AACA7CFF96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CD6E543-1DF8-4D1A-B4CA-C01E8EF57520}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CD6E543-1DF8-4D1A-B4CA-C01E8EF57520}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CD6E543-1DF8-4D1A-B4CA-C01E8EF57520}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CD6E543-1DF8-4D1A-B4CA-C01E8EF57520}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
