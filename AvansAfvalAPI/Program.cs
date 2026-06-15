@@ -44,7 +44,9 @@ builder.Services.AddTransient<IAuthenticationService, AspNetIdentityAuthenticati
 
 
 builder.Services.AddDbContextPool<DatabaseContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString(sqlConnectionString))
+    options.UseNpgsql(sqlConnectionString, npgsqlOptions =>
+        npgsqlOptions.ConfigureDataSource(dataSourceBuilder =>
+            dataSourceBuilder.EnableDynamicJson()))
 );
 
 
@@ -80,4 +82,3 @@ app.MapGroup("/account").MapIdentityApi<IdentityUser>().WithTags("Account");
 
 
 app.Run();
-
