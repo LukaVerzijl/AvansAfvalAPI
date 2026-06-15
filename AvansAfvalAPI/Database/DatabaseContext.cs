@@ -16,6 +16,8 @@ namespace AvansAfvalAPI.Database;
                 .HasIndex(u => u.NormalizedEmail)
                 .IsUnique();
 
-            modelBuilder.Entity<TrashModel>();
+            modelBuilder.Entity<TrashModel>()
+                .Property(t => t.ExternalParameters)
+                .HasColumnType("jsonb");
         }
     }

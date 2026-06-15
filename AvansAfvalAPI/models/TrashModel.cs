@@ -5,10 +5,10 @@ namespace AvansAfvalAPI.models;
 
 public class TrashModel
 {
-    public Guid Id { get; set; }
+    public int Id { get; set; }
     public DateTime CaptureDate { get; set; }
     public String? GarbageType { get; set; }
     public String? Location { get; set; }
     public Double Confidence { get; set; }
-    public String? ExternalParameters { get; set; }
+    public Dictionary<string, object>? ExternalParameters { get; set; }
 }

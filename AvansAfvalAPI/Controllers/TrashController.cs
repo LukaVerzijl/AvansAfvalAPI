@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AvansAfvalAPI.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("[controller]")]
 [Consumes("application/json")]
@@ -41,5 +40,13 @@ public class TrashController : ControllerBase
 
         var trash = await query.ToListAsync();
         return Ok(trash);
+    }
+
+    [HttpPost(Name = "CreateTrash")]
+    public async Task<ActionResult<TrashModel>> CreateAsync(TrashModel trash)
+    {
+        _context.Trash.Add(trash);
+        await _context.SaveChangesAsync();
+        return CreatedAtRoute("GetTrash", new { id = trash.Id }, trash);
     }
 }
