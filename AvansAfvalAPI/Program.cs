@@ -7,8 +7,9 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var sqlConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
-                          ?? builder.Configuration.GetConnectionString("RailwayConnection");
+builder.Services.AddControllers();
+
+var sqlConnectionString = builder.Configuration.GetConnectionString("RailwayConnection");
 var sqlConnectionStringFound = !string.IsNullOrWhiteSpace(sqlConnectionString);
 
 builder.Services.AddControllers();
@@ -18,7 +19,6 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
-        
         Title = "AvansAfvalAPI",
         Version = "v1",
     });
