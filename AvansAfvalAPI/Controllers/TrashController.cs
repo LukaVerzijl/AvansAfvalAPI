@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using AvansAfvalAPI.Database;
 using AvansAfvalAPI.Interfaces;
 using AvansAfvalAPI.models;
@@ -8,34 +7,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AvansAfvalAPI.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("[controller]")]
 [Consumes("application/json")]
 [Produces("application/json")]
-public class TrashController : ControllerBase
+public class TrashController(DatabaseContext context) : ControllerBase
 {
-    private readonly DatabaseContext _context;
-    private readonly IAuthenticationService _authenticationService;
-    
-    public TrashController(DatabaseContext context, IAuthenticationService authenticationService)
-    {
-        _context = context;
-        _authenticationService = authenticationService;
-    }
-
     [HttpGet(Name = "GetTrash")]
-    public async Task<ActionResult<IEnumerable<TrashModel>>> GetAsync([FromQuery] DateTime? time1, [FromQuery]  DateTime? time2)
+    public async Task<ActionResult<IEnumerable<TrashModel>>> GetAsync([FromQuery] DateTime? fromDate, [FromQuery]  DateTime? toDate)
     {
-        var query = _context.Trash.AsQueryable();
+        var query = context.Trash.AsNoTracking();
 
-        if (time1.HasValue)
+        if (fromDate.HasValue)
         {
-            query = query.Where(t => t.CaptureDate >= time1.Value);
+            query = query.Where(t => t.CaptureDate >= fromDate.Value);
         }
 
-        if (time2.HasValue)
+        if (toDate.HasValue)
         {
-            query = query.Where(t => t.CaptureDate <= time2.Value);
+            query = query.Where(t => t.CaptureDate <= toDate.Value);
         }
 
         var trash = await query.ToListAsync();
@@ -45,7 +36,7 @@ public class TrashController : ControllerBase
     [HttpGet("{id}", Name = "GetTrashById")]
     public async Task<ActionResult<TrashModel>> GetByIdAsync(int id)
     {
-        var trash = await _context.Trash.FindAsync(id);
+        var trash = await context.Trash.FindAsync(id);
 
         if (trash == null)
         {
@@ -58,8 +49,8 @@ public class TrashController : ControllerBase
     [HttpPost(Name = "CreateTrash")]
     public async Task<ActionResult<TrashModel>> CreateAsync(TrashModel trash)
     {
-        _context.Trash.Add(trash);
-        await _context.SaveChangesAsync();
+        context.Trash.Add(trash);
+        await context.SaveChangesAsync();
         return CreatedAtRoute("GetTrashById", new { id = trash.Id }, trash);
     }
 }
