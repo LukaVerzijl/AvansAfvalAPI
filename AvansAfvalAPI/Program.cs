@@ -11,6 +11,8 @@ var sqlConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
                           ?? builder.Configuration.GetConnectionString("RailwayConnection");
 var sqlConnectionStringFound = !string.IsNullOrWhiteSpace(sqlConnectionString);
 
+builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -80,5 +82,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapGroup("/account").MapIdentityApi<IdentityUser>().WithTags("Account");
 app.MapControllers();
+
 
 app.Run();
