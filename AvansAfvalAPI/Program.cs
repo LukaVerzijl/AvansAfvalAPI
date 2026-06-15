@@ -79,6 +79,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapGroup("/account").MapIdentityApi<IdentityUser>().WithTags("Account");
-
+app.MapControllers();
 
 app.Run();
