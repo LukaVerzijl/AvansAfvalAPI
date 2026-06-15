@@ -9,8 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-var sqlConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
-                          ?? builder.Configuration.GetConnectionString("RailwayConnection");
+var sqlConnectionString = builder.Configuration.GetConnectionString("RailwayConnection");
 var sqlConnectionStringFound = !string.IsNullOrWhiteSpace(sqlConnectionString);
 
 builder.Services.AddEndpointsApiExplorer();
@@ -18,7 +17,6 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
-        
         Title = "AvansAfvalAPI",
         Version = "v1",
     });
@@ -46,7 +44,7 @@ builder.Services.AddTransient<IAuthenticationService, AspNetIdentityAuthenticati
 
 
 builder.Services.AddDbContextPool<DatabaseContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString(sqlConnectionString))
+    options.UseNpgsql(sqlConnectionString)
 );
 
 
