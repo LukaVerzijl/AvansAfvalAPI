@@ -10,5 +10,5 @@ public class TrashModel
     public String? GarbageType { get; set; }
     public String? Location { get; set; }
     public Double Confidence { get; set; }
-    public JsonContent? ExternalParameters { get; set; }
+    public String? ExternalParameters { get; set; }
 }

@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AvansAfvalAPI.Controllers;
 
-
 [Authorize]
 [ApiController]
 [Route("[controller]")]
@@ -27,7 +26,7 @@ public class TrashController : ControllerBase
     [HttpGet(Name = "GetAllTrash")]
     public async Task<ActionResult<TrashModel>> GetAsync()
     {
-        var trash = await _context.Trash.ToListAsync();
+        List<TrashModel> trash = await _context.Trash.ToListAsync();
         return Ok(trash);
     }
 }
