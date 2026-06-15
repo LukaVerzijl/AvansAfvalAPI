@@ -2,6 +2,7 @@ using AvansAfvalAPI.models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using AvansAfvalAPI.Models;
 
 namespace AvansAfvalAPI.Database;
 

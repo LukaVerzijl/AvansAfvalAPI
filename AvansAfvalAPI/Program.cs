@@ -12,6 +12,8 @@ builder.Services.AddControllers();
 var sqlConnectionString = builder.Configuration.GetConnectionString("RailwayConnection");
 var sqlConnectionStringFound = !string.IsNullOrWhiteSpace(sqlConnectionString);
 
+builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -83,4 +85,3 @@ app.MapControllers();
 
 
 app.Run();
-
