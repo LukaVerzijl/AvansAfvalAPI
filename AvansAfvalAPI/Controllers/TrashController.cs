@@ -23,7 +23,7 @@ public class TrashController : ControllerBase
         _authenticationService = authenticationService;
     }
 
-    [HttpGet(Name = "GetAllTrash")]
+    [HttpGet(Name = "GetTrash")]
     public async Task<ActionResult<IEnumerable<TrashModel>>> GetAsync([FromQuery] DateTime? time1, [FromQuery]  DateTime? time2)
     {
         var query = _context.Trash.AsQueryable();
@@ -41,12 +41,25 @@ public class TrashController : ControllerBase
         var trash = await query.ToListAsync();
         return Ok(trash);
     }
+    
+    [HttpGet("{id}", Name = "GetTrashById")]
+    public async Task<ActionResult<TrashModel>> GetByIdAsync(int id)
+    {
+        var trash = await _context.Trash.FindAsync(id);
+
+        if (trash == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(trash);
+    }
 
     [HttpPost(Name = "CreateTrash")]
     public async Task<ActionResult<TrashModel>> CreateAsync(TrashModel trash)
     {
         _context.Trash.Add(trash);
         await _context.SaveChangesAsync();
-        return CreatedAtRoute("GetTrash", new { id = trash.Id }, trash);
+        return CreatedAtRoute("GetTrashById", new { id = trash.Id }, trash);
     }
 }
