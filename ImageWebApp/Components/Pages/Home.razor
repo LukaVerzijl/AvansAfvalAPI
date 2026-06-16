@@ -3,6 +3,44 @@
 <PageTitle>AI test</PageTitle>
 
 <div class="mb-3">
-    <label for="formFile" class="form-label">Kies uw bestand:</label> 
-    <input class="form-control" type="file" id="formFile">
+    <label for="formImage" class="form-label">Kies uw foto:</label> 
+    <input class="form-control" type="file" id="formImage" accept="image/*">
+    <br/>
+    <button class="btn btn-primary" id="submitButton">Versturen</button>
 </div>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const imageInput = document.getElementById("formImage");
+        const btn = document.getElementById("submitButton");
+
+        async function uploadFile() {
+            if (imageInput.files.length === 0) {
+                alert("Please select an image");
+                return;
+            }
+
+            const image = imageInput.files[0];
+            const formData = new FormData();
+            formData.append('file', image);
+
+            try {
+                console.log("Bezig met uploaden...");
+                const response = await fetch('https://jouw-api.com/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert("Upload geslaagd!");
+                } else {
+                    alert("Upload mislukt.");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Er ging iets mis bij het versturen.");
+            }
+        }
+        btn.addEventListener("click", uploadFile);
+    });
+  </script>
