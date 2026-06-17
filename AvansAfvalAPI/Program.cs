@@ -1,6 +1,9 @@
 using System.Reflection;
+using Amazon.Runtime;
+using Amazon.S3;
 using AvansAfvalAPI.Database;
 using AvansAfvalAPI.Interfaces;
+using AvansAfvalAPI.Storage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -11,8 +14,6 @@ builder.Services.AddControllers();
 
 var sqlConnectionString = builder.Configuration.GetConnectionString("RailwayConnection");
 var sqlConnectionStringFound = !string.IsNullOrWhiteSpace(sqlConnectionString);
-
-builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -43,6 +44,50 @@ builder.Services.AddIdentityApiEndpoints<IdentityUser>(options =>
 // Register IHttpContextAccessor for accessing HTTP context in services (e.g., to get current user info).
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<IAuthenticationService, AspNetIdentityAuthenticationService>();
+builder.Services.AddSingleton(S3StorageOptions.FromConfiguration(builder.Configuration));
+builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
+{
+    var s3Options = serviceProvider.GetRequiredService<S3StorageOptions>();
+    s3Options.Validate();
+
+    var credentials = new BasicAWSCredentials(s3Options.AccessKey, s3Options.SecretKey);
+    var config = new AmazonS3Config
+    {
+        ServiceURL = s3Options.ServiceUrl,
+        ForcePathStyle = s3Options.ForcePathStyle,
+        AuthenticationRegion = s3Options.Region
+    };
+
+    return new AmazonS3Client(credentials, config);
+});
+builder.Services.AddTransient<IObjectStorageService, S3ObjectStorageService>();
+
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()
+    ?? [];
+
+if (allowedOrigins.Length == 0 && builder.Environment.IsDevelopment())
+{
+    allowedOrigins =
+    [
+        "http://localhost:5056",
+        "https://localhost:7177"
+    ];
+}
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ImageWebApp", policy =>
+    {
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        }
+    });
+});
 
 
 builder.Services.AddDbContextPool<DatabaseContext>(options =>
@@ -78,6 +123,7 @@ else
 
 app.UseHttpsRedirection();
 
+app.UseCors("ImageWebApp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapGroup("/account").MapIdentityApi<IdentityUser>().WithTags("Account");
