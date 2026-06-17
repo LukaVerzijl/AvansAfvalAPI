@@ -1,6 +1,5 @@
 using AvansAfvalAPI.Database;
-using AvansAfvalAPI.Interfaces;
-using AvansAfvalAPI.models;
+using AvansAfvalAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +14,7 @@ namespace AvansAfvalAPI.Controllers;
 public class TrashController(DatabaseContext context) : ControllerBase
 {
     [HttpGet(Name = "GetTrash")]
-    public async Task<ActionResult<IEnumerable<TrashModel>>> GetAsync([FromQuery] DateTime? fromDate, [FromQuery]  DateTime? toDate)
+    public async Task<ActionResult<IEnumerable<Trash>>> GetAsync([FromQuery] DateTime? fromDate, [FromQuery]  DateTime? toDate)
     {
         var query = context.Trash.AsNoTracking();
 
@@ -34,7 +33,7 @@ public class TrashController(DatabaseContext context) : ControllerBase
     }
     
     [HttpGet("{id}", Name = "GetTrashById")]
-    public async Task<ActionResult<TrashModel>> GetByIdAsync(int id)
+    public async Task<ActionResult<Trash>> GetByIdAsync(int id)
     {
         var trash = await context.Trash.FindAsync(id);
 
@@ -47,7 +46,7 @@ public class TrashController(DatabaseContext context) : ControllerBase
     }
 
     [HttpPost(Name = "CreateTrash")]
-    public async Task<ActionResult<TrashModel>> CreateAsync(TrashModel trash)
+    public async Task<ActionResult<Trash>> CreateAsync(Trash trash)
     {
         context.Trash.Add(trash);
         await context.SaveChangesAsync();

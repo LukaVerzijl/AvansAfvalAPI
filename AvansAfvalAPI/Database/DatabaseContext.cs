@@ -1,4 +1,3 @@
-using AvansAfvalAPI.models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +7,7 @@ namespace AvansAfvalAPI.Database;
 
     public class DatabaseContext(DbContextOptions<DatabaseContext> options) : IdentityDbContext<IdentityUser>(options)
     {
-        public DbSet<TrashModel> Trash { get; set; }
+        public DbSet<Trash> Trash { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -17,7 +16,7 @@ namespace AvansAfvalAPI.Database;
                 .HasIndex(u => u.NormalizedEmail)
                 .IsUnique();
 
-            modelBuilder.Entity<TrashModel>()
+            modelBuilder.Entity<Trash>()
                 .Property(t => t.ExternalParameters)
                 .HasColumnType("jsonb");
         }
