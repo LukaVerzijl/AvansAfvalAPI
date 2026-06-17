@@ -2,6 +2,7 @@ using Amazon.Runtime;
 using AvansAfvalAPI.Database;
 using AvansAfvalAPI.Interfaces;
 using AvansAfvalAPI.Models;
+using AvansAfvalAPI.Prediction;
 using AvansAfvalAPI.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,8 @@ namespace AvansAfvalAPI.Controllers;
 public class UserUploadedController(
     DatabaseContext context,
     IObjectStorageService objectStorageService,
-    IAuthenticationService authenticationService) : ControllerBase
+    IAuthenticationService authenticationService,
+    IImagePredictionQueue predictionQueue) : ControllerBase
 {
     private const long MaxFileSize = 10 * 1024 * 1024;
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -84,6 +86,7 @@ public class UserUploadedController(
 
         context.UserUploaded.Add(upload);
         await context.SaveChangesAsync(cancellationToken);
+        predictionQueue.Enqueue(upload.UploadId);
 
         var response = ToResponse(upload);
 

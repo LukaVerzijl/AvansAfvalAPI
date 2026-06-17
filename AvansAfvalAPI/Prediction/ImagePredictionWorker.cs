@@ -1,0 +1,94 @@
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using AvansAfvalAPI.Database;
+using AvansAfvalAPI.Storage;
+using Microsoft.EntityFrameworkCore;
+
+namespace AvansAfvalAPI.Prediction;
+
+public sealed class ImagePredictionWorker(
+    IImagePredictionQueue queue,
+    IServiceScopeFactory scopeFactory,
+    IHttpClientFactory httpClientFactory,
+    ImagePredictionOptions options,
+    ILogger<ImagePredictionWorker> logger) : BackgroundService
+{
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        await foreach (var uploadId in queue.ReadAllAsync(stoppingToken))
+        {
+            try
+            {
+                await PredictAsync(uploadId, stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Prediction failed for upload {UploadId}", uploadId);
+            }
+        }
+    }
+
+    private async Task PredictAsync(Guid uploadId, CancellationToken cancellationToken)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+        var objectStorageService = scope.ServiceProvider.GetRequiredService<IObjectStorageService>();
+
+        var upload = await context.UserUploaded
+            .FirstOrDefaultAsync(userUpload => userUpload.UploadId == uploadId, cancellationToken);
+
+        if (upload is null)
+        {
+            logger.LogWarning("Prediction skipped because upload {UploadId} was not found", uploadId);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(upload.ImageUrl))
+        {
+            logger.LogWarning("Prediction skipped because upload {UploadId} has no image URL", uploadId);
+            return;
+        }
+
+        var signedImageUrl = objectStorageService.CreateReadUrl(
+            upload.ImageUrl,
+            TimeSpan.FromMinutes(options.SignedImageUrlMinutes));
+
+        var httpClient = httpClientFactory.CreateClient("PredictionApi");
+        using var response = await httpClient.PostAsJsonAsync(
+            options.Endpoint,
+            new PredictionRequest(signedImageUrl),
+            JsonOptions,
+            cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        var prediction = await response.Content.ReadFromJsonAsync<PredictionResponse>(JsonOptions, cancellationToken);
+        if (prediction is null)
+        {
+            logger.LogWarning("Prediction API returned an empty response for upload {UploadId}", uploadId);
+            return;
+        }
+
+        upload.GarbageType = prediction.Label;
+        upload.Confidence = prediction.Confidence;
+        upload.ExternalParameters = JsonSerializer.SerializeToDocument(prediction, JsonOptions);
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    private sealed record PredictionRequest([property: JsonPropertyName("image_url")] string ImageUrl);
+
+    private sealed record PredictionResponse(
+        string Label,
+        double Confidence,
+        [property: JsonPropertyName("nothing_found")] bool NothingFound,
+        double Threshold,
+        Dictionary<string, double> Scores);
+}

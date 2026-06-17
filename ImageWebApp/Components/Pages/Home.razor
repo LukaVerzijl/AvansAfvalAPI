@@ -53,6 +53,7 @@
 
         btn.dataset.uploadBound = "true";
         loadUploads();
+        window.setInterval(loadUploads, 5000);
 
         async function uploadFile() {
             if (imageInput.files.length === 0) {

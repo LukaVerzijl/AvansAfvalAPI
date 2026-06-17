@@ -3,6 +3,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using AvansAfvalAPI.Database;
 using AvansAfvalAPI.Interfaces;
+using AvansAfvalAPI.Prediction;
 using AvansAfvalAPI.Storage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -46,6 +47,10 @@ builder.Services.AddIdentityApiEndpoints<IdentityUser>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<IAuthenticationService, AspNetIdentityAuthenticationService>();
 builder.Services.AddSingleton(S3StorageOptions.FromConfiguration(builder.Configuration));
+builder.Services.AddSingleton(ImagePredictionOptions.FromConfiguration(builder.Configuration));
+builder.Services.AddSingleton<IImagePredictionQueue, ImagePredictionQueue>();
+builder.Services.AddHostedService<ImagePredictionWorker>();
+builder.Services.AddHttpClient("PredictionApi");
 builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
 {
     var s3Options = serviceProvider.GetRequiredService<S3StorageOptions>();
