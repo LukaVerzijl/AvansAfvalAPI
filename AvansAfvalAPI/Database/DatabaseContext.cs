@@ -8,6 +8,7 @@ namespace AvansAfvalAPI.Database;
     public class DatabaseContext(DbContextOptions<DatabaseContext> options) : IdentityDbContext<IdentityUser>(options)
     {
         public DbSet<Trash> Trash { get; set; }
+        public DbSet<UserUploaded> UserUploaded { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -19,5 +20,8 @@ namespace AvansAfvalAPI.Database;
             modelBuilder.Entity<Trash>()
                 .Property(t => t.ExternalParameters)
                 .HasColumnType("jsonb");
+
+            modelBuilder.Entity<UserUploaded>()
+                .HasKey(u => u.UploadId);
         }
     }
