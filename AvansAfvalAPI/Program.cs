@@ -5,6 +5,7 @@ using AvansAfvalAPI.Database;
 using AvansAfvalAPI.Interfaces;
 using AvansAfvalAPI.Storage;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
@@ -98,6 +99,13 @@ builder.Services.AddDbContextPool<DatabaseContext>(options =>
 
 
 var app = builder.Build();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost,
+    KnownNetworks = { },
+    KnownProxies = { }
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

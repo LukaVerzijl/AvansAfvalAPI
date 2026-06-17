@@ -13,7 +13,7 @@
     <label for="formImage" class="form-label">Kies uw foto:</label> 
     <input class="form-control" type="file" id="formImage" accept="image/*">
     <br/>
-    <button class="btn btn-primary" id="submitButton" type="button" data-upload-url="@uploadEndpoint" data-entries-url="@entriesEndpoint">Versturen</button>
+    <button class="btn btn-primary" id="submitButton" type="button" data-api-base-url="@apiBaseUrl" data-upload-url="@uploadEndpoint" data-entries-url="@entriesEndpoint">Versturen</button>
     <div class="form-text mt-2" id="uploadStatus" aria-live="polite"></div>
 </div>
 
@@ -75,7 +75,7 @@
 
                 if (response.ok) {
                     const result = await response.json();
-                    showViewLink(result.viewUrlEndpoint);
+                    showViewLink(getViewUrlEndpoint(result));
                     await loadUploads();
                 } else {
                     const error = await response.text();
@@ -158,7 +158,7 @@
                 link.textContent = "Bekijk";
                 link.addEventListener("click", async (event) => {
                     event.preventDefault();
-                    await openViewUrl(upload.viewUrlEndpoint);
+                    await openViewUrl(getViewUrlEndpoint(upload));
                 });
                 actionCell.append(link);
                 row.append(actionCell);
@@ -175,6 +175,10 @@
 
         function formatConfidence(confidence) {
             return typeof confidence === "number" ? confidence.toFixed(2) : "-";
+        }
+
+        function getViewUrlEndpoint(upload) {
+            return new URL(`/useruploaded/${upload.uploadId}/view-url`, btn.dataset.apiBaseUrl).toString();
         }
 
         async function openViewUrl(viewUrlEndpoint) {
