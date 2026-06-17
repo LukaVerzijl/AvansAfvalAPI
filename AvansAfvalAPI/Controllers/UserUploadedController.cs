@@ -27,6 +27,17 @@ public class UserUploadedController(
     };
 
     [AllowAnonymous]
+    [HttpGet(Name = "GetUserUploaded")]
+    public async Task<ActionResult<IEnumerable<UserUploadedResponse>>> GetAsync(CancellationToken cancellationToken)
+    {
+        var uploads = await context.UserUploaded.AsNoTracking()
+            .OrderByDescending(userUpload => userUpload.UploadId)
+            .ToListAsync(cancellationToken);
+
+        return Ok(uploads.Select(ToResponse));
+    }
+
+    [AllowAnonymous]
     [HttpPost(Name = "UploadUserImage")]
     [RequestSizeLimit(MaxFileSize)]
     [Consumes("multipart/form-data")]
@@ -74,11 +85,7 @@ public class UserUploadedController(
         context.UserUploaded.Add(upload);
         await context.SaveChangesAsync(cancellationToken);
 
-        var response = new UserUploadedResponse(
-            upload.UploadId,
-            upload.ImageUrl,
-            upload.ImageName,
-            BuildViewUrlEndpoint(upload.UploadId));
+        var response = ToResponse(upload);
 
         return CreatedAtRoute("GetUserUploadedById", new { id = upload.UploadId }, response);
     }
@@ -132,8 +139,27 @@ public class UserUploadedController(
     {
         return $"{Request.Scheme}://{Request.Host}{Request.PathBase}/useruploaded/{uploadId}/view-url";
     }
+
+    private UserUploadedResponse ToResponse(UserUploaded upload)
+    {
+        return new UserUploadedResponse(
+            upload.UploadId,
+            upload.ImageUrl,
+            upload.ImageName,
+            upload.UserId,
+            upload.GarbageType,
+            upload.Confidence,
+            BuildViewUrlEndpoint(upload.UploadId));
+    }
 }
 
-public sealed record UserUploadedResponse(Guid UploadId, string? ImageUrl, string? ImageName, string ViewUrlEndpoint);
+public sealed record UserUploadedResponse(
+    Guid UploadId,
+    string? ImageUrl,
+    string? ImageName,
+    string? UserId,
+    string? GarbageType,
+    double Confidence,
+    string ViewUrlEndpoint);
 
 public sealed record UserUploadedViewUrlResponse(string Url, DateTimeOffset ExpiresAt);

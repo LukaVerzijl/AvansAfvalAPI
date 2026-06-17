@@ -6,27 +6,53 @@
 @{
     var apiBaseUrl = Configuration["Api:BaseUrl"]?.TrimEnd('/') ?? "https://localhost:7228";
     var uploadEndpoint = $"{apiBaseUrl}/useruploaded";
+    var entriesEndpoint = $"{apiBaseUrl}/useruploaded";
 }
 
 <div class="mb-3">
     <label for="formImage" class="form-label">Kies uw foto:</label> 
     <input class="form-control" type="file" id="formImage" accept="image/*">
     <br/>
-    <button class="btn btn-primary" id="submitButton" type="button" data-upload-url="@uploadEndpoint">Versturen</button>
+    <button class="btn btn-primary" id="submitButton" type="button" data-upload-url="@uploadEndpoint" data-entries-url="@entriesEndpoint">Versturen</button>
     <div class="form-text mt-2" id="uploadStatus" aria-live="polite"></div>
 </div>
+
+<section class="mt-4">
+    <h2 class="h5">Uploads</h2>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Bestand</th>
+                <th scope="col">Type</th>
+                <th scope="col">Confidence</th>
+                <th scope="col">User</th>
+                <th scope="col">Upload id</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody id="uploadRows">
+            <tr>
+                <td colspan="6" class="text-muted">Uploads laden...</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
 
 <script>
     (() => {
         const imageInput = document.getElementById("formImage");
         const btn = document.getElementById("submitButton");
         const status = document.getElementById("uploadStatus");
+        const uploadRows = document.getElementById("uploadRows");
 
-        if (!imageInput || !btn || btn.dataset.uploadBound === "true") {
+        if (!imageInput || !btn || !uploadRows || btn.dataset.uploadBound === "true") {
             return;
         }
 
         btn.dataset.uploadBound = "true";
+        loadUploads();
 
         async function uploadFile() {
             if (imageInput.files.length === 0) {
@@ -50,6 +76,7 @@
                 if (response.ok) {
                     const result = await response.json();
                     showViewLink(result.viewUrlEndpoint);
+                    await loadUploads();
                 } else {
                     const error = await response.text();
                     status.textContent = error || "Upload mislukt.";
@@ -85,12 +112,85 @@
                     window.location.href = result.url;
                 } catch (error) {
                     console.error("Error:", error);
-                    previewWindow?.close();
                     status.textContent = "Er ging iets mis bij het ophalen van de foto.";
                 }
             });
 
             status.append(link);
+        }
+
+        async function loadUploads() {
+            try {
+                const response = await fetch(btn.dataset.entriesUrl);
+                if (!response.ok) {
+                    uploadRows.innerHTML = `<tr><td colspan="6" class="text-danger">Uploads konden niet worden geladen.</td></tr>`;
+                    return;
+                }
+
+                const uploads = await response.json();
+                renderUploads(uploads);
+            } catch (error) {
+                console.error("Error:", error);
+                uploadRows.innerHTML = `<tr><td colspan="6" class="text-danger">Uploads konden niet worden geladen.</td></tr>`;
+            }
+        }
+
+        function renderUploads(uploads) {
+            uploadRows.textContent = "";
+
+            if (!uploads.length) {
+                uploadRows.innerHTML = `<tr><td colspan="6" class="text-muted">Nog geen uploads.</td></tr>`;
+                return;
+            }
+
+            for (const upload of uploads) {
+                const row = document.createElement("tr");
+
+                appendCell(row, upload.imageName || "-");
+                appendCell(row, upload.garbageType || "-");
+                appendCell(row, formatConfidence(upload.confidence));
+                appendCell(row, upload.userId || "-");
+                appendCell(row, upload.uploadId);
+
+                const actionCell = document.createElement("td");
+                const link = document.createElement("a");
+                link.href = "#";
+                link.textContent = "Bekijk";
+                link.addEventListener("click", async (event) => {
+                    event.preventDefault();
+                    await openViewUrl(upload.viewUrlEndpoint);
+                });
+                actionCell.append(link);
+                row.append(actionCell);
+
+                uploadRows.append(row);
+            }
+        }
+
+        function appendCell(row, text) {
+            const cell = document.createElement("td");
+            cell.textContent = text;
+            row.append(cell);
+        }
+
+        function formatConfidence(confidence) {
+            return typeof confidence === "number" ? confidence.toFixed(2) : "-";
+        }
+
+        async function openViewUrl(viewUrlEndpoint) {
+            try {
+                const response = await fetch(viewUrlEndpoint);
+                if (!response.ok) {
+                    status.textContent = "Kon geen tijdelijke foto-url ophalen.";
+                    return;
+                }
+
+                const result = await response.json();
+                window.location.href = result.url;
+            } catch (error) {
+                console.error("Error:", error);
+                status.textContent = "Er ging iets mis bij het ophalen van de foto.";
+            }
         }
 
         btn.addEventListener("click", uploadFile);
