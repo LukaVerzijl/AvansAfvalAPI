@@ -47,6 +47,20 @@ public sealed class S3ObjectStorageService(IAmazonS3 s3Client, S3StorageOptions 
         return s3Client.GetPreSignedURL(request);
     }
 
+    public async Task DeleteAsync(string objectKeyOrUrl, CancellationToken cancellationToken)
+    {
+        options.Validate();
+
+        var objectKey = ExtractObjectKey(objectKeyOrUrl);
+        var request = new DeleteObjectRequest
+        {
+            BucketName = options.BucketName,
+            Key = objectKey
+        };
+
+        await s3Client.DeleteObjectAsync(request, cancellationToken);
+    }
+
     private string CreateObjectKey(string fileName)
     {
         var extension = Path.GetExtension(fileName);

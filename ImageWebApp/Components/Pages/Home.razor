@@ -154,6 +154,8 @@
                 appendCell(row, upload.uploadId);
 
                 const actionCell = document.createElement("td");
+                actionCell.className = "text-nowrap";
+
                 const link = document.createElement("a");
                 link.href = "#";
                 link.textContent = "Bekijk";
@@ -162,6 +164,16 @@
                     await openViewUrl(getViewUrlEndpoint(upload));
                 });
                 actionCell.append(link);
+
+                const deleteButton = document.createElement("button");
+                deleteButton.type = "button";
+                deleteButton.className = "btn btn-sm btn-outline-danger ms-2";
+                deleteButton.textContent = "Verwijder";
+                deleteButton.addEventListener("click", async () => {
+                    await deleteUpload(upload);
+                });
+                actionCell.append(deleteButton);
+
                 row.append(actionCell);
 
                 uploadRows.append(row);
@@ -182,6 +194,10 @@
             return new URL(`/useruploaded/${upload.uploadId}/view-url`, btn.dataset.apiBaseUrl).toString();
         }
 
+        function getDeleteEndpoint(upload) {
+            return new URL(`/useruploaded/${upload.uploadId}`, btn.dataset.apiBaseUrl).toString();
+        }
+
         async function openViewUrl(viewUrlEndpoint) {
             try {
                 const response = await fetch(viewUrlEndpoint);
@@ -195,6 +211,32 @@
             } catch (error) {
                 console.error("Error:", error);
                 status.textContent = "Er ging iets mis bij het ophalen van de foto.";
+            }
+        }
+
+        async function deleteUpload(upload) {
+            if (!window.confirm(`Upload "${upload.imageName || upload.uploadId}" verwijderen?`)) {
+                return;
+            }
+
+            try {
+                status.textContent = "Upload verwijderen...";
+
+                const response = await fetch(getDeleteEndpoint(upload), {
+                    method: "DELETE"
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    status.textContent = error || "Upload kon niet worden verwijderd.";
+                    return;
+                }
+
+                status.textContent = "Upload verwijderd.";
+                await loadUploads();
+            } catch (error) {
+                console.error("Error:", error);
+                status.textContent = "Er ging iets mis bij het verwijderen.";
             }
         }
 

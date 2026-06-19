@@ -138,6 +138,38 @@ public class UserUploadedController(
         return Ok(upload);
     }
 
+    [AllowAnonymous]
+    [HttpDelete("{id:guid}", Name = "DeleteUserUploadedById")]
+    public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var upload = await context.UserUploaded
+            .FirstOrDefaultAsync(userUpload => userUpload.UploadId == id, cancellationToken);
+
+        if (upload is null)
+            return NotFound();
+
+        if (!string.IsNullOrWhiteSpace(upload.ImageUrl))
+        {
+            try
+            {
+                await objectStorageService.DeleteAsync(upload.ImageUrl, cancellationToken);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Problem(ex.Message, statusCode: StatusCodes.Status502BadGateway);
+            }
+            catch (AmazonServiceException ex)
+            {
+                return Problem($"S3 delete failed: {ex.Message}", statusCode: StatusCodes.Status502BadGateway);
+            }
+        }
+
+        context.UserUploaded.Remove(upload);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
+
     private string BuildViewUrlEndpoint(Guid uploadId)
     {
         return $"{Request.Scheme}://{Request.Host}{Request.PathBase}/useruploaded/{uploadId}/view-url";

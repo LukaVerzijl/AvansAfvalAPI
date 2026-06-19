@@ -9,6 +9,8 @@ public interface IObjectStorageService
         CancellationToken cancellationToken);
 
     string CreateReadUrl(string objectKeyOrUrl, TimeSpan expiresIn);
+
+    Task DeleteAsync(string objectKeyOrUrl, CancellationToken cancellationToken);
 }
 
 public sealed record StoredObject(string Key, string Url);
