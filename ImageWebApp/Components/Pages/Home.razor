@@ -1,59 +1,175 @@
-﻿@page "/"
+@page "/"
 @inject IConfiguration Configuration
 
 <PageTitle>AI test</PageTitle>
 
 @{
     var apiBaseUrl = Configuration["Api:BaseUrl"]?.TrimEnd('/') ?? "https://localhost:7228";
+    var loginEndpoint = $"{apiBaseUrl}/account/login";
     var uploadEndpoint = $"{apiBaseUrl}/useruploaded";
     var entriesEndpoint = $"{apiBaseUrl}/useruploaded";
 }
 
-<div class="mb-3">
-    <label for="formImage" class="form-label">Kies uw foto:</label> 
-    <input class="form-control" type="file" id="formImage" accept="image/*">
-    <br/>
-    <button class="btn btn-primary" id="submitButton" type="button" data-api-base-url="@apiBaseUrl" data-upload-url="@uploadEndpoint" data-entries-url="@entriesEndpoint">Versturen</button>
-    <div class="form-text mt-2" id="uploadStatus" aria-live="polite"></div>
-</div>
+<section id="loginPanel" class="mt-3">
+    <h1 class="h4">Inloggen</h1>
+    <form id="loginForm" class="mt-3" data-login-url="@loginEndpoint">
+        <div class="mb-3">
+            <label for="loginEmail" class="form-label">E-mail</label>
+            <input class="form-control" id="loginEmail" type="email" autocomplete="username" required>
+        </div>
+        <div class="mb-3">
+            <label for="loginPassword" class="form-label">Wachtwoord</label>
+            <input class="form-control" id="loginPassword" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn btn-primary" id="loginButton" type="submit">Inloggen</button>
+        <div class="form-text mt-2" id="loginStatus" aria-live="polite"></div>
+    </form>
+</section>
 
-<section class="mt-4">
-    <h2 class="h5">Uploads</h2>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
-            <thead>
-            <tr>
-                <th scope="col">Bestand</th>
-                <th scope="col">Type</th>
-                <th scope="col">Confidence</th>
-                <th scope="col">User</th>
-                <th scope="col">Upload id</th>
-                <th scope="col"></th>
-            </tr>
-            </thead>
-            <tbody id="uploadRows">
-            <tr>
-                <td colspan="6" class="text-muted">Uploads laden...</td>
-            </tr>
-            </tbody>
-        </table>
+<section id="appPanel" class="d-none">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Uploads</h1>
+        <button class="btn btn-outline-secondary btn-sm" id="logoutButton" type="button">Uitloggen</button>
     </div>
+
+    <div class="mb-3">
+        <label for="formImage" class="form-label">Kies uw foto:</label>
+        <input class="form-control" type="file" id="formImage" accept="image/*">
+        <br/>
+        <button class="btn btn-primary" id="submitButton" type="button" data-api-base-url="@apiBaseUrl" data-upload-url="@uploadEndpoint" data-entries-url="@entriesEndpoint">Versturen</button>
+        <div class="form-text mt-2" id="uploadStatus" aria-live="polite"></div>
+    </div>
+
+    <section class="mt-4">
+        <h2 class="h5">Uploads</h2>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                <tr>
+                    <th scope="col">Bestand</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Confidence</th>
+                    <th scope="col">User</th>
+                    <th scope="col">Upload id</th>
+                    <th scope="col"></th>
+                </tr>
+                </thead>
+                <tbody id="uploadRows">
+                <tr>
+                    <td colspan="6" class="text-muted">Uploads laden...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </section>
 
 <script>
     (() => {
+        const tokenKey = "avansAfvalApi.accessToken";
+        const loginPanel = document.getElementById("loginPanel");
+        const appPanel = document.getElementById("appPanel");
+        const loginForm = document.getElementById("loginForm");
+        const loginEmail = document.getElementById("loginEmail");
+        const loginPassword = document.getElementById("loginPassword");
+        const loginButton = document.getElementById("loginButton");
+        const loginStatus = document.getElementById("loginStatus");
+        const logoutButton = document.getElementById("logoutButton");
         const imageInput = document.getElementById("formImage");
         const btn = document.getElementById("submitButton");
         const status = document.getElementById("uploadStatus");
         const uploadRows = document.getElementById("uploadRows");
 
-        if (!imageInput || !btn || !uploadRows || btn.dataset.uploadBound === "true") {
+        if (!loginPanel || !appPanel || !loginForm || !imageInput || !btn || !uploadRows || btn.dataset.uploadBound === "true") {
             return;
         }
 
+        let refreshIntervalId = null;
         btn.dataset.uploadBound = "true";
-        loadUploads();
-        window.setInterval(loadUploads, 5000);
+
+        loginForm.addEventListener("submit", login);
+        logoutButton.addEventListener("click", logout);
+        btn.addEventListener("click", uploadFile);
+
+        if (getAccessToken()) {
+            showApp();
+        } else {
+            showLogin();
+        }
+
+        async function login(event) {
+            event.preventDefault();
+
+            try {
+                loginButton.disabled = true;
+                loginStatus.textContent = "Bezig met inloggen...";
+
+                const response = await fetch(loginForm.dataset.loginUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        email: loginEmail.value,
+                        password: loginPassword.value
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    loginStatus.textContent = error || "Inloggen mislukt.";
+                    return;
+                }
+
+                const result = await response.json();
+                const accessToken = result.accessToken || result.token || result.bearerToken;
+                if (!accessToken) {
+                    loginStatus.textContent = "Login response bevat geen access token.";
+                    return;
+                }
+
+                sessionStorage.setItem(tokenKey, accessToken);
+                loginPassword.value = "";
+                loginStatus.textContent = "";
+                showApp();
+            } catch (error) {
+                console.error("Error:", error);
+                loginStatus.textContent = "Er ging iets mis bij het inloggen.";
+            } finally {
+                loginButton.disabled = false;
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem(tokenKey);
+            status.textContent = "";
+            showLogin();
+        }
+
+        function showLogin(message) {
+            appPanel.classList.add("d-none");
+            loginPanel.classList.remove("d-none");
+            uploadRows.innerHTML = `<tr><td colspan="6" class="text-muted">Log in om uploads te laden.</td></tr>`;
+
+            if (refreshIntervalId) {
+                window.clearInterval(refreshIntervalId);
+                refreshIntervalId = null;
+            }
+
+            if (message) {
+                loginStatus.textContent = message;
+            }
+        }
+
+        function showApp() {
+            loginPanel.classList.add("d-none");
+            appPanel.classList.remove("d-none");
+            loadUploads();
+
+            if (!refreshIntervalId) {
+                refreshIntervalId = window.setInterval(loadUploads, 5000);
+            }
+        }
 
         async function uploadFile() {
             if (imageInput.files.length === 0) {
@@ -69,7 +185,7 @@
                 btn.disabled = true;
                 status.textContent = "Bezig met uploaden...";
 
-                const response = await fetch(btn.dataset.uploadUrl, {
+                const response = await authenticatedFetch(btn.dataset.uploadUrl, {
                     method: 'POST',
                     body: formData
                 });
@@ -79,8 +195,7 @@
                     showViewLink(getViewUrlEndpoint(result));
                     await loadUploads();
                 } else {
-                    const error = await response.text();
-                    status.textContent = error || "Upload mislukt.";
+                    await handleApiError(response, "Upload mislukt.");
                 }
             } catch (error) {
                 console.error("Error:", error);
@@ -99,31 +214,21 @@
             link.textContent = "Bekijk foto";
             link.addEventListener("click", async (event) => {
                 event.preventDefault();
-
-
-                try {
-                    const response = await fetch(viewUrlEndpoint);
-                    if (!response.ok) {
-                        const error = await response.text();
-                        status.textContent = error || "Kon geen tijdelijke foto-url ophalen.";
-                        return;
-                    }
-
-                    const result = await response.json();
-                    window.location.href = result.url;
-                } catch (error) {
-                    console.error("Error:", error);
-                    status.textContent = "Er ging iets mis bij het ophalen van de foto.";
-                }
+                await openViewUrl(viewUrlEndpoint);
             });
 
             status.append(link);
         }
 
         async function loadUploads() {
+            if (!getAccessToken()) {
+                return;
+            }
+
             try {
-                const response = await fetch(btn.dataset.entriesUrl);
+                const response = await authenticatedFetch(btn.dataset.entriesUrl);
                 if (!response.ok) {
+                    await handleApiError(response, "Uploads konden niet worden geladen.");
                     uploadRows.innerHTML = `<tr><td colspan="6" class="text-danger">Uploads konden niet worden geladen.</td></tr>`;
                     return;
                 }
@@ -175,7 +280,6 @@
                 actionCell.append(deleteButton);
 
                 row.append(actionCell);
-
                 uploadRows.append(row);
             }
         }
@@ -198,11 +302,42 @@
             return new URL(`/useruploaded/${upload.uploadId}`, btn.dataset.apiBaseUrl).toString();
         }
 
+        function getAccessToken() {
+            return sessionStorage.getItem(tokenKey);
+        }
+
+        async function authenticatedFetch(url, options = {}) {
+            const token = getAccessToken();
+            if (!token) {
+                showLogin("Log opnieuw in.");
+                throw new Error("Missing access token");
+            }
+
+            const headers = new Headers(options.headers || {});
+            headers.set("Authorization", `Bearer ${token}`);
+
+            return fetch(url, {
+                ...options,
+                headers
+            });
+        }
+
+        async function handleApiError(response, fallbackMessage) {
+            if (response.status === 401) {
+                sessionStorage.removeItem(tokenKey);
+                showLogin("Sessie verlopen. Log opnieuw in.");
+                return;
+            }
+
+            const error = await response.text();
+            status.textContent = error || fallbackMessage;
+        }
+
         async function openViewUrl(viewUrlEndpoint) {
             try {
-                const response = await fetch(viewUrlEndpoint);
+                const response = await authenticatedFetch(viewUrlEndpoint);
                 if (!response.ok) {
-                    status.textContent = "Kon geen tijdelijke foto-url ophalen.";
+                    await handleApiError(response, "Kon geen tijdelijke foto-url ophalen.");
                     return;
                 }
 
@@ -222,13 +357,12 @@
             try {
                 status.textContent = "Upload verwijderen...";
 
-                const response = await fetch(getDeleteEndpoint(upload), {
+                const response = await authenticatedFetch(getDeleteEndpoint(upload), {
                     method: "DELETE"
                 });
 
                 if (!response.ok) {
-                    const error = await response.text();
-                    status.textContent = error || "Upload kon niet worden verwijderd.";
+                    await handleApiError(response, "Upload kon niet worden verwijderd.");
                     return;
                 }
 
@@ -239,7 +373,5 @@
                 status.textContent = "Er ging iets mis bij het verwijderen.";
             }
         }
-
-        btn.addEventListener("click", uploadFile);
     })();
 </script>

@@ -13,6 +13,7 @@ namespace AvansAfvalAPI.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Produces("application/json")]
+[Authorize]
 public class UserUploadedController(
     DatabaseContext context,
     IObjectStorageService objectStorageService,
@@ -28,7 +29,6 @@ public class UserUploadedController(
         "image/gif"
     };
 
-    [AllowAnonymous]
     [HttpGet(Name = "GetUserUploaded")]
     public async Task<ActionResult<IEnumerable<UserUploadedResponse>>> GetAsync(CancellationToken cancellationToken)
     {
@@ -39,7 +39,6 @@ public class UserUploadedController(
         return Ok(uploads.Select(ToResponse));
     }
 
-    [AllowAnonymous]
     [HttpPost(Name = "UploadUserImage")]
     [RequestSizeLimit(MaxFileSize)]
     [Consumes("multipart/form-data")]
@@ -93,7 +92,6 @@ public class UserUploadedController(
         return CreatedAtRoute("GetUserUploadedById", new { id = upload.UploadId }, response);
     }
 
-    [AllowAnonymous]
     [HttpGet("{id:guid}/view-url", Name = "GetUserUploadedViewUrl")]
     public async Task<ActionResult<UserUploadedViewUrlResponse>> CreateViewUrlAsync(
         Guid id,
@@ -125,7 +123,6 @@ public class UserUploadedController(
         }
     }
 
-    [Authorize]
     [HttpGet("{id:guid}", Name = "GetUserUploadedById")]
     public async Task<ActionResult<UserUploaded>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -138,7 +135,6 @@ public class UserUploadedController(
         return Ok(upload);
     }
 
-    [AllowAnonymous]
     [HttpDelete("{id:guid}", Name = "DeleteUserUploadedById")]
     public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {

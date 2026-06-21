@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using AvansAfvalAPI.Database;
 using AvansAfvalAPI.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -46,10 +48,35 @@ public class TrashController(DatabaseContext context) : ControllerBase
     }
 
     [HttpPost(Name = "CreateTrash")]
-    public async Task<ActionResult<Trash>> CreateAsync(Trash trash)
+    public async Task<ActionResult<Trash>> CreateAsync(CreateTrashRequest request)
     {
+        var trash = new Trash
+        {
+            CaptureDate = request.CaptureDate,
+            GarbageType = request.GarbageType,
+            Location = request.Location,
+            Confidence = request.Confidence,
+            ExternalParameters = request.ExternalParameters
+        };
+
         context.Trash.Add(trash);
         await context.SaveChangesAsync();
         return CreatedAtRoute("GetTrashById", new { id = trash.Id }, trash);
     }
+}
+
+public class CreateTrashRequest
+{
+    public DateTime CaptureDate { get; set; }
+
+    [Required]
+    public string GarbageType { get; set; } = string.Empty;
+
+    [Required]
+    public string Location { get; set; } = string.Empty;
+
+    public double Confidence { get; set; }
+
+    [Required]
+    public JsonDocument ExternalParameters { get; set; } = null!;
 }
