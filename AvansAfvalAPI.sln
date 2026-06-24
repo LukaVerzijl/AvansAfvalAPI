@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvansAfvalAPI", "AvansAfval
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageWebApp", "ImageWebApp\ImageWebApp.csproj", "{2CD6E543-1DF8-4D1A-B4CA-C01E8EF57520}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvansAfvalAPI.Tests", "AvansAfvalAPI.Tests\AvansAfvalAPI.Tests.csproj", "{D91F56BE-A0CF-46B8-B83F-34AE7B3C74D1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{2CD6E543-1DF8-4D1A-B4CA-C01E8EF57520}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2CD6E543-1DF8-4D1A-B4CA-C01E8EF57520}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2CD6E543-1DF8-4D1A-B4CA-C01E8EF57520}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D91F56BE-A0CF-46B8-B83F-34AE7B3C74D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D91F56BE-A0CF-46B8-B83F-34AE7B3C74D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D91F56BE-A0CF-46B8-B83F-34AE7B3C74D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D91F56BE-A0CF-46B8-B83F-34AE7B3C74D1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
